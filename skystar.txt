@@ -1,0 +1,93 @@
+------------ création de la table clients-----------
+ CREATE TABLE Clients(
+        numPass VARCHAR(9) PRIMARY KEY, 
+	nom VARCHAR(255) NOT NULL UNIQUE,
+ 	ville VARCHAR(255) NOT NULL
+ );
+
+------------ création de la table RESERVATIONS -----------
+   CREATE TABLE Reservations(
+         numR NUMERIC(11) PRIMARY KEY, 
+  	 date_arrivée date NOT NULL,  
+  	 date_départ date,
+	 numPass VARCHAR(9),
+	 numC NUMERIC(11),
+	   	CONSTRAINT fk_reservation FOREIGN KEY(numPass) REFERENCES Clients(numPass) ON DELETE CASCADE ON UPDATE CASCADE,
+		CONSTRAINT fk_chambres FOREIGN KEY(numC) REFERENCES Chambres(numC) ON DELETE CASCADE ON UPDATE CASCADE
+
+  );
+------------ création de la table CHAMBRES-----------
+ CREATE TABLE Chambres(
+         numC NUMERIC(11) PRIMARY KEY, 
+         lits NUMERIC(11) NOT NULL DEFAULT 2,
+         prix NUMERIC(11) NOT NULL
+);
+
+----------------------insertion des tables " Client" ----------------------
+INSERT INTO Clients VALUES ('ABC123','Taoufiq EL HANCHAOUI','Agadir');
+INSERT INTO Clients VALUES ('Ajh303','Ahmed Miftah','Youssoufia');
+INSERT INTO Clients VALUES ('BFH143','TArek Moubariki','Safi');
+INSERT INTO Clients VALUES ('KLM456','Ismail Kaddi','Rabat');
+INSERT INTO Clients VALUES ('JHZ231','Mohamed Oubouhia','Sidi ifni');
+INSERT INTO Clients VALUES ('CBA198','Yassine Cherkaoui','Casablanca');
+
+----------------------insertion des tables " Chambres "----------------------
+INSERT INTO Chambres VALUES (1,2,800);
+INSERT INTO Chambres VALUES (2,1,600);
+INSERT INTO Chambres VALUES (3,3,1000);
+INSERT INTO Chambres VALUES (4,2,800);
+INSERT INTO Chambres VALUES (5,1,600);
+INSERT INTO Chambres VALUES (6,4,1100);
+INSERT INTO Chambres VALUES (7,3,800);
+INSERT INTO Chambres VALUES (8,2,700);
+
+----------------------insertion des tables " Reservations"----------------------
+INSERT INTO Reservations VALUES (1,1,'27/04/2021','01/05/2021','CBA198');
+INSERT INTO Reservations VALUES (2,1,'27/04/2021','03/05/2021','CBA198');
+INSERT INTO Reservations VALUES (3,2,'27/04/2021','04/05/2021','Ajh303');
+INSERT INTO Reservations VALUES (4,3,'27/04/2021','07/05/2021','BFH143');
+INSERT INTO Reservations VALUES (5,4,'27/04/2021','08/05/2021','KLM456');
+INSERT INTO Reservations VALUES (6,5,'27/04/2021','02/05/2021','JHZ231');
+INSERT INTO Reservations VALUES (7,6,'27/04/2021','08/05/2021','ABC123');
+INSERT INTO Reservations VALUES (8,7,'27/04/2021','02/05/2021','ABC123');
+
+----------une fonction qui affiche les client qui ont reservé les chambres quit coûtent plus de 700 dhs---------
+
+CREATE FUNCTION afficherClts() RETURNS void
+LANGUAGE 'plpgsql'
+AS $$
+BEGIN
+   SELECT * FROM Clients cl 
+      INNER JOIN reservations r on (cl.numPass  = r.numPass)  
+      INNER JOIN chambres ch on (ch.numC = r.numC )
+      WHERE (prix>700);
+END
+$$;
+
+---------- une fonction qui affiche les chambres reservées par les clients dont les noms commecent par A---------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
