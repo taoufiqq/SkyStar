@@ -8,8 +8,8 @@
 ------------ création de la table RESERVATIONS -----------
    CREATE TABLE Reservations(
          numR NUMERIC(11) PRIMARY KEY, 
-  	 date_arrivée date NOT NULL,  
-  	 date_départ date,
+  	 date_arrivee date NOT NULL,  
+  	 date_depart date,
 	 numPass VARCHAR(9),
 	 numC NUMERIC(11),
 	   	CONSTRAINT fk_reservation FOREIGN KEY(numPass) REFERENCES Clients(numPass) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -42,39 +42,149 @@ INSERT INTO Chambres VALUES (7,3,800);
 INSERT INTO Chambres VALUES (8,2,700);
 
 ----------------------insertion des tables " Reservations"----------------------
-INSERT INTO Reservations VALUES (1,1,'27/04/2021','01/05/2021','CBA198');
+INSERT INTO Reservations VALUES (1,1,'27/08/2021','01/12/2020','CBA198');
 INSERT INTO Reservations VALUES (2,1,'27/04/2021','03/05/2021','CBA198');
-INSERT INTO Reservations VALUES (3,2,'27/04/2021','04/05/2021','Ajh303');
+INSERT INTO Reservations VALUES (3,2,'07/08/2020','04/10/2020','Ajh303');
 INSERT INTO Reservations VALUES (4,3,'27/04/2021','07/05/2021','BFH143');
 INSERT INTO Reservations VALUES (5,4,'27/04/2021','08/05/2021','KLM456');
 INSERT INTO Reservations VALUES (6,5,'27/04/2021','02/05/2021','JHZ231');
 INSERT INTO Reservations VALUES (7,6,'27/04/2021','08/05/2021','ABC123');
 INSERT INTO Reservations VALUES (8,7,'27/04/2021','02/05/2021','ABC123');
 
-----------une fonction qui affiche les client qui ont reservé les chambres quit coûtent plus de 700 dhs---------
+//-----------fonction qui affiche les chambres réservées pendant le mois d'Août dernier-------------
 
-CREATE FUNCTION afficherClts() RETURNS void
-LANGUAGE 'plpgsql'
-AS $$
+CREATE or replace FUNCTION chambresReserveLeMois8 ()
+RETURNS TABLE(numC Numeric ,lits Numeric,prix Numeric) as $list$
+
 BEGIN
-   SELECT * FROM Clients cl 
-      INNER JOIN reservations r on (cl.numPass  = r.numPass)  
-      INNER JOIN chambres ch on (ch.numC = r.numC )
-      WHERE (prix>700);
-END
-$$;
+    RETURN QUERY SELECT
+     ch.*
+    FROM
+     chambres AS ch,reservations AS r
+     WHERE ch.numC=r.numC AND EXTRACT(MONTH FROM r.date_arrivee )=08
+	 GROUP BY ch.numC;
+END; 
+$list$ LANGUAGE 'plpgsql';
+-------
+SELECT public.chambresreservelemois8()
 
----------- une fonction qui affiche les chambres reservées par les clients dont les noms commecent par A---------
+//----------- fonction qui affiche les client qui ont reservé les chambres quit coûtent plus de 700 dhs---------------
+
+CREATE or replace FUNCTION afficherclientreservplust700dh ()
+RETURNS TABLE(numPass varchar ,nom varchar,ville varchar) as $list$
+
+BEGIN
+    RETURN QUERY SELECT
+     cl.*
+    FROM
+     chambres AS ch,reservations AS r,"clients" AS cl
+     WHERE ch.numC=r.numC AND r.numPass = cl.numPass AND ch.prix>700
+	 GROUP BY cl.numPass;
+END; 
+$list$ LANGUAGE 'plpgsql';
+
+------
+SELECT public.afficherclientreservplust700dh()
+------
 
 
+//------------ fonction qui affiche les chambres reservées par les clients dont les noms commecent par A-------------
+
+CREATE or replace FUNCTION chambresNomCommenceParA()
+RETURNS TABLE(numC Numeric ,lits Numeric,prix Numeric) as $list$
+
+BEGIN
+    RETURN QUERY SELECT
+     ch.*
+    FROM
+     chambres AS ch,reservations AS r,clients AS cl
+     WHERE ch.numC=r.numC AND r.numPass = cl.numPass AND cl.nom Like'A%'
+	 GROUP BY ch.numC;
+END; 
+$list$ LANGUAGE 'plpgsql';
+------
+SELECT public.chambresnomcommencepara()
 
 
+//--------fonction qui affiche les clients qui ont réservés plus de 2 chambres-------------
+
+CREATE or replace FUNCTION clientsReservéPlus2Chambres ()
+RETURNS TABLE(numPass varchar ,nom varchar,ville varchar) as $list$
+
+BEGIN
+    RETURN QUERY SELECT 
+     cl.*
+    FROM
+     chambres AS ch, reservations AS r,clients AS cl
+     WHERE ch.numC= r.numC AND r.numPass = cl.numPass 
+	 GROUP BY cl.numPass
+	having count(ch.numC)>2;
+END; 
+$list$ LANGUAGE 'plpgsql';
+
+------
+SELECT public."clientsreservéplus2chambres"()
+--------
+
+-----------fonction qui affiche les clients qui habitent à Casablanca et qui on passé plus de 2 réservations ont réservés plus de 2 chambres-------------
+
+CREATE or replace FUNCTION ClientHabitCasablanca ()
+RETURNS TABLE(numPass varchar ,nom varchar,ville varchar) as $list$
+
+BEGIN
+    RETURN QUERY SELECT 
+     cl.*
+    FROM
+     chambres AS ch, reservations AS r,clients AS cl
+     WHERE ch.numC= r.numC AND r.numPass = cl.numPass AND cl.ville='Casablanca' 
+	 GROUP BY cl.numPass
+	having count(ch.numC)>2 AND count(r.numPass)>2 ;
+END; 
+$list$ LANGUAGE 'plpgsql';
+
+------
+
+SELECT public.clienthabitcasablanca()
+-------
 
 
+//  procédure qui permet de modifer le prix des chambres qui des prix supérieurs à 700dhs par 1000dhs-------------
+
+CREATE OR REPLACE PROCEDURE public.updateprix(
+	)
+LANGUAGE 'sql'
+AS $BODY$
+UPDATE chambres SET prix  = '1000' WHERE prix>700
+$BODY$;
 
 
+//procédure qui permet de supprimer les clients qui n'ont passé des réservations-----------------
+
+create or replace procedure supprimerClientplusdeuxreserv()
+language plpgsql    
+as $delete$
+begin
+    delete from "clients" WHERE clients.numPass Not in(select numPass FROM reservations );
+end;
+$delete$
+-------
+CALL public.supprimerclientplusdeuxreserv()
+-------
 
 
+//procédure qui permet d'ajouter 100dhs pour les chambres qui ont plus de 2 lits-------------------
+
+create or replace procedure Ajouté100dhPourLits()
+language plpgsql    
+as $updatePrice$
+begin
+    update chambres 
+    set prix = prix + 100
+    where lits > 1;
+end;$updatePrice$
+
+-----
+CALL public.ajouté100dhpourlits()
 
 
 
